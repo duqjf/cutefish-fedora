@@ -1,0 +1,11 @@
+[Unit]
+Description=Verificacao periodica de novas releases do Obsidian
+
+[Timer]
+# Logo apos o boot o Obsidian costuma estar fechado e a atualizacao nao e adiada.
+OnBootSec=10min
+OnUnitActiveSec=12h
+RandomizedDelaySec=30min
+
+[Install]
+WantedBy=timers.target

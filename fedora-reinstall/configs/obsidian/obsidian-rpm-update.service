@@ -1,0 +1,19 @@
+[Unit]
+Description=Atualiza o RPM do Obsidian quando sai uma release nova
+After=network-online.target
+Wants=network-online.target
+# Ate 4 tentativas a cada 6 h; depois espera o proximo disparo do timer.
+StartLimitIntervalSec=6h
+StartLimitBurst=4
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/obsidian-rpm/instalar-obsidian.sh --automatico
+Environment=TMPDIR=/var/tmp
+TimeoutStartSec=1h
+# Depois de boot ou resume a rede pode ainda nao ter DNS.
+Restart=on-failure
+RestartSec=15min
+Nice=19
+CPUSchedulingPolicy=batch
+IOSchedulingClass=idle

@@ -1,0 +1,5 @@
+window-decoration = client
+gtk-titlebar = true
+gtk-titlebar-style = native
+theme = Apple System Colors Light
+font-family = JetBrainsMono Nerd Font Mono

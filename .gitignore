@@ -1,0 +1,5 @@
+# Saídas de build e downloads do Reef (o script baixa e confere por assinatura)
+*.deb
+*.rpm
+reef-rpm/
+*.bak

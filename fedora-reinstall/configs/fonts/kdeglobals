@@ -1,0 +1,12 @@
+[General]
+XftAntialias=true
+XftHintStyle=hintslight
+XftSubPixel=none
+fixed=SF Mono,8,-1,5,400,0,0,0,1,0,0,0,0,0,0,1
+font=SF Pro Text,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0
+menuFont=SF Pro,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
+smallestReadableFont=SF Pro,8,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
+toolBarFont=SF Pro,9,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
+
+[WM]
+activeFont=SF Pro,10,-1,5,600,0,0,0,0,0,0,0,0,0,0,1
