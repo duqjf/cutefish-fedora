@@ -55,7 +55,7 @@ sudo dnf swap -y libva-intel-media-driver intel-media-driver --allowerasing
 sudo dnf install -y libva-intel-driver
 sudo dnf install -y \
   7zip cpio gzip tar xz fontconfig fuse-libs gtk3 nss alsa-lib kf6-kconfig gcc make git \
-  langpacks-pt_BR xdg-desktop-portal-kde
+  langpacks-pt_BR xdg-desktop-portal-kde google-noto-sans-cjk-vf-fonts google-noto-serif-cjk-vf-fonts
 
 log 'Instalando aplicativos RPM'
 sudo dnf install -y helium-bin microsoft-edge-stable

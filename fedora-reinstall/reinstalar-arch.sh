@@ -39,7 +39,7 @@ sudo pacman -Syu
 log 'Instalando codecs, aceleracao de video Intel e pacotes do sistema'
 # O base-devel tambem traz o objcopy que monta a UKI na troca para o systemd-boot.
 sudo pacman -S --needed \
-  7zip cpio curl gzip tar xz git base-devel fontconfig fuse2 gtk3 nss alsa-lib kconfig \
+  7zip cpio curl gzip tar xz git base-devel fontconfig noto-fonts-cjk fuse2 gtk3 nss alsa-lib kconfig \
   flatpak desktop-file-utils xdg-utils xorg-xwayland xdg-desktop-portal xdg-desktop-portal-kde \
   ffmpeg libva libva-utils mesa intel-media-driver libva-intel-driver \
   gstreamer gst-plugins-base gst-plugins-good gst-plugins-bad gst-plugins-ugly gst-libav gst-plugin-va
