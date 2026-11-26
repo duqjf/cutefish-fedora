@@ -306,7 +306,7 @@ sync_forks() {
         if [[ $(git -C "$d" remote get-url origin) == "$GH/$r" ]]; then
           echo "  $r: origin ainda é o upstream; defina FORK_BASE em repos.conf para enviar" >&2
         else
-          git -C "$d" push -q --force-with-lease origin "$b" && echo "  $r: enviado para o fork"
+          git -C "$d" push -q -u --force-with-lease origin "$b" && echo "  $r: enviado para o fork"
         fi
       fi
     else
