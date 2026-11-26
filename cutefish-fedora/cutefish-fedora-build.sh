@@ -44,7 +44,7 @@ ORDER=(cutefish-toolkit cutefish-framework qt-plugins icons cutefish-core cutefi
        filemanager terminal xdg-desktop-portal-cutefish settings system-monitor
        text-editor video-player calendar calculator preview cutefish-compositor wallpapers)
 # Repositórios que existem na org mas não estão na lista do guia; compilados no fim se existirem.
-EXTRA=(clock disk-utility)
+EXTRA=(clock disk-utility cutefish-computer-use)
 
 log() { printf '\n\033[1;34m==> %s\033[0m\n' "$*"; }
 
@@ -204,7 +204,7 @@ prep() {
 deps() {
   log "Ferramentas de build"
   sudo dnf install -y git cmake ninja-build pkgconf-pkg-config clang gcc-c++ \
-    python3 gettext curl minisign gtk-update-icon-cache
+    python3 gettext curl minisign gtk-update-icon-cache cargo rust
 
   log "Bibliotecas (por módulo pkg-config, como o guia sugere para Fedora)"
   local pcs=(
@@ -356,8 +356,29 @@ skip() {
   return 1
 }
 
+# Servidor MCP do computer-use (Rust). O .cargo/config.toml do repositório compila
+# offline com os crates do Debian; o Fedora não tem as mesmas versões (jpeg-encoder
+# 0.6), então o cargo roda fora da pasta, para não ler esse arquivo, e usa o crates.io.
+# O compositor só confia no binário em /usr/bin/cutefish-computer-use.
+build_computer_use() {
+  local r=cutefish-computer-use
+  log "Compilando $r"
+  (cd "$SRC/build" && cargo build --release --manifest-path "$SRC/$r/Cargo.toml" --target-dir "$SRC/build/$r")
+  rm -f "$SRC/$r/Cargo.lock"
+  sudo install -m 0755 "$SRC/build/$r/release/$r" /usr/bin/$r
+  register_computer_use
+}
+
+# Registra o servidor no Claude Code (escopo do usuário), se ele estiver instalado.
+register_computer_use() {
+  command -v claude >/dev/null 2>&1 || { echo "  Claude Code não encontrado; depois rode: claude mcp add -s user cutefish -- /usr/bin/cutefish-computer-use"; return 0; }
+  claude mcp get cutefish >/dev/null 2>&1 ||
+    claude mcp add -s user cutefish -- /usr/bin/cutefish-computer-use
+}
+
 build_one() {
   local r=$1
+  if [[ $r == cutefish-computer-use ]]; then build_computer_use; return; fi
   log "Compilando $r"
   if [[ $r == cutefish-core ]]; then
     # A pasta /Applications pertence ao grupo de administradores, que no código é o

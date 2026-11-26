@@ -533,6 +533,10 @@ install_user_apps_and_configs() {
   curl -fsSL https://claude.ai/install.sh | bash
   hash -r
   claude --version
+  # Computer-use do Cutefish (compilado por cutefish-fedora-build.sh), se presente.
+  if [[ -x /usr/bin/cutefish-computer-use ]] && ! claude mcp get cutefish >/dev/null 2>&1; then
+    claude mcp add -s user cutefish -- /usr/bin/cutefish-computer-use
+  fi
 }
 
 finish_message() {
