@@ -19,25 +19,49 @@ check_common() {
   local config
   [[ "$EUID" -ne 0 ]] || die 'Execute como usuario normal, sem sudo; o script usa sudo quando necessario.'
   command_exists sudo || die 'sudo nao foi encontrado.'
-  for config in codex/config.toml system/asus-fnlock.conf system/capslock.conf \
+  for config in system/asus-fnlock.conf system/capslock.conf \
                 system/hibernate.conf system/dracut-resume.conf \
                 ghostty/config fonts/kdeglobals fonts/99-apple-rendering.conf "$@"; do
     [[ -r "$CONFIG_DIR/$config" ]] || die "Arquivo ausente: configs/$config"
   done
 }
 
-# Pergunta no inicio, para o resto da instalacao rodar sem esperar essa resposta.
-# --hibernacao ou --sem-hibernacao pulam a pergunta.
-ask_hibernation() {
-  local answer=''
-  case "${1:-}" in
-    --hibernacao) ENABLE_HIBERNATION=1; return ;;
-    --sem-hibernacao) ENABLE_HIBERNATION=0; return ;;
-    '') ;;
-    *) die "Opcao desconhecida: $1 (use --hibernacao ou --sem-hibernacao)" ;;
-  esac
-  read -rp 'Ativar a hibernacao (swapfile e suspender, depois hibernar)? [s/N] ' answer || true
-  if [[ "${answer,,}" == s* ]]; then ENABLE_HIBERNATION=1; else ENABLE_HIBERNATION=0; fi
+# Le as opcoes e pergunta no inicio o que nao foi passado, para o resto da
+# instalacao rodar sem esperar respostas.
+#   --hibernacao | --sem-hibernacao  ativa ou nao a hibernacao
+#   --ardia | --sem-ardia            instala ou nao a nightly do navegador Ardia
+#   --kde | --cutefish               desktop em uso (so o Fedora usa; sem a opcao,
+#                                    vem de XDG_CURRENT_DESKTOP)
+ENABLE_HIBERNATION=''
+INSTALL_ARDIA=''
+DESKTOP_ENV=''
+parse_options() {
+  local answer desktop="${XDG_CURRENT_DESKTOP:-}"
+  while (( $# )); do
+    case "$1" in
+      --hibernacao) ENABLE_HIBERNATION=1 ;;
+      --sem-hibernacao) ENABLE_HIBERNATION=0 ;;
+      --ardia) INSTALL_ARDIA=1 ;;
+      --sem-ardia) INSTALL_ARDIA=0 ;;
+      --kde) DESKTOP_ENV=kde ;;
+      --cutefish) DESKTOP_ENV=cutefish ;;
+      *) die "Opcao desconhecida: $1 (use --hibernacao, --sem-hibernacao, --ardia, --sem-ardia, --kde ou --cutefish)" ;;
+    esac
+    shift
+  done
+  if [[ -z "$DESKTOP_ENV" ]]; then
+    if [[ "${desktop,,}" == *cutefish* ]]; then DESKTOP_ENV=cutefish; else DESKTOP_ENV=kde; fi
+  fi
+  if [[ -z "$ENABLE_HIBERNATION" ]]; then
+    answer=''
+    read -rp 'Ativar a hibernacao (swapfile e suspender, depois hibernar)? [s/N] ' answer || true
+    if [[ "${answer,,}" == s* ]]; then ENABLE_HIBERNATION=1; else ENABLE_HIBERNATION=0; fi
+  fi
+  if [[ -z "$INSTALL_ARDIA" ]]; then
+    answer=''
+    read -rp 'Instalar a nightly mais recente do navegador Ardia? [s/N] ' answer || true
+    if [[ "${answer,,}" == s* ]]; then INSTALL_ARDIA=1; else INSTALL_ARDIA=0; fi
+  fi
 }
 
 configure_asus_fnlock() {
@@ -280,6 +304,56 @@ install_claude_desktop() (
   rpm -q claude-desktop
 )
 
+# So no Fedora com Cutefish: o Ghostty do Mac, que roda pelo Reef. Pega o DMG da
+# versao estavel mais nova no appcast oficial e extrai o Ghostty.app com o 7z,
+# sem montar a imagem. /Applications e criada pelo build do Cutefish; se faltar,
+# e criada aqui do mesmo jeito (root:wheel 2775, rotulo SELinux usr_t).
+install_ghostty_app() (
+  local tmp url
+  url="$(curl -fsSL --retry 3 https://release.files.ghostty.org/appcast.xml |
+    grep -oE 'https://release\.files\.ghostty\.org/[0-9]+\.[0-9]+\.[0-9]+/Ghostty\.dmg' |
+    sort -uV | tail -n 1)" || true
+  [[ -n "$url" ]] || die 'Nenhum Ghostty.dmg encontrado no appcast do Ghostty.'
+  printf 'Ghostty: %s\n' "$url"
+  tmp="$(mktemp -d -t ghostty.XXXXXXXX)"
+  trap 'rm -rf -- "$tmp"' EXIT
+  curl -fL --retry 3 -o "$tmp/Ghostty.dmg" "$url"
+  7z x -y "-o$tmp/dmg" "$tmp/Ghostty.dmg" >/dev/null
+  [[ -x "$tmp/dmg/Ghostty.app/Contents/MacOS/ghostty" ]] || die 'Ghostty.app nao encontrado no DMG.'
+  if [[ ! -d /Applications ]]; then
+    sudo install -d -m 2775 -o root -g wheel /Applications
+    sudo semanage fcontext -a -t usr_t '/Applications(/.*)?' 2>/dev/null || true
+  fi
+  # O usuario esta no grupo wheel, dono da pasta, como quando o Files instala um app.
+  sudo rm -rf /Applications/Ghostty.app
+  sudo install -d -m 2775 -o "$USER" -g wheel /Applications/Ghostty.app
+  cp -a "$tmp/dmg/Ghostty.app/." /Applications/Ghostty.app/
+  sudo restorecon -R /Applications 2>/dev/null || true
+)
+
+# Nightly mais recente de https://github.com/ardia-browser/ardia. O tar.xz para Linux
+# traz o install.sh oficial, que instala em /usr/lib/ardia com lancador e icone e
+# registra a acao do polkit usada pelo atualizador do proprio Ardia.
+install_ardia_nightly() (
+  local releases url tmp name
+  # /releases/latest ignora prereleases, e as releases "Engine" ocupam boa parte da lista.
+  releases="$(curl -fsSL --retry 3 'https://api.github.com/repos/ardia-browser/ardia/releases?per_page=100')"
+  url="$(grep -oE 'https://github\.com/ardia-browser/ardia/releases/download/v[^"/]*-nightly[^"/]*/Ardia-[^"/]*-linux-x64\.tar\.xz' <<< "$releases" |
+    head -n 1)" || true
+  [[ -n "$url" ]] || die 'Nenhuma nightly do Ardia para Linux encontrada.'
+  name="${url##*/}"
+  printf 'Ardia Nightly: %s\n' "$name"
+  tmp="$(mktemp -d -t ardia.XXXXXXXX)"
+  trap 'rm -rf -- "$tmp"' EXIT
+  curl -fL --retry 3 -o "$tmp/$name" "$url"
+  curl -fsSL --retry 3 -o "$tmp/$name.sha256" "$url.sha256"
+  (cd "$tmp" && sha256sum --check --status "$name.sha256") || die "SHA-256 inesperado em $name"
+  tar -xJf "$tmp/$name" -C "$tmp"
+  [[ -f "$tmp/ardia/install.sh" ]] || die "install.sh nao encontrado em $name"
+  sudo bash "$tmp/ardia/install.sh"
+  [[ -x /usr/lib/ardia/ardia-launch ]] || die "Ardia nao foi instalado em /usr/lib/ardia."
+)
+
 refresh_desktop_database() {
   if command_exists update-desktop-database; then
     update-desktop-database "$DATA_HOME/applications"
@@ -414,7 +488,7 @@ T3CODE_DESKTOP
   printf '%s\n' 'T3 Code Nightly instalado. Atualize pela interface do aplicativo; mantenha o canal nightly.'
 }
 
-# Codex e Claude Code ficam em ~/.local/bin.
+# O Claude Code fica em ~/.local/bin.
 ensure_local_bin_in_path() {
   # shellcheck disable=SC2016
   local path_line='export PATH="$HOME/.local/bin:$PATH"'
@@ -449,12 +523,10 @@ install_user_apps_and_configs() {
   log 'Instalando a nightly mais recente do T3 Code'
   install_t3code_nightly
 
-  log 'Instalando o Codex CLI e aplicando a configuracao'
-  curl -fsSL https://chatgpt.com/codex/install.sh | sh
-  install -d -m 0700 "${CODEX_HOME:-$HOME/.codex}"
-  install -m 0600 "$CONFIG_DIR/codex/config.toml" "${CODEX_HOME:-$HOME/.codex}/config.toml"
-  hash -r
-  codex --version
+  if (( INSTALL_ARDIA )); then
+    log 'Instalando a nightly mais recente do Ardia'
+    install_ardia_nightly
+  fi
 
   log 'Instalando o Claude Code pelo instalador nativo'
   # Instalador geral para Linux: https://code.claude.com/docs/en/setup
@@ -465,7 +537,7 @@ install_user_apps_and_configs() {
 
 finish_message() {
   log 'Concluido'
-  printf '%s\n' 'Para entrar nas contas, execute: codex e claude'
+  printf '%s\n' 'Para entrar na conta, execute: claude'
   printf '%s\n' 'Reinicie para aplicar o Fn Lock, as fontes, os acentos e o seletor de arquivos do KDE.'
   if (( ENABLE_HIBERNATION )); then
     printf '%s\n' 'Depois de reiniciar, teste a hibernacao com: systemctl hibernate'

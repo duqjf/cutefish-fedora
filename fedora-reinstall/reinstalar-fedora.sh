@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Instala os programas e configuracoes desta maquina no Fedora KDE.
+# Instala os programas e configuracoes desta maquina no Fedora KDE ou Cutefish.
 # Inventario capturado em 2026-08-27 no Fedora 44. Execute como usuario normal.
-# Uso: bash reinstalar-fedora.sh [--hibernacao | --sem-hibernacao]
+# Uso: bash reinstalar-fedora.sh [--hibernacao | --sem-hibernacao] [--ardia | --sem-ardia] [--kde | --cutefish]
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source-path=SCRIPTDIR
@@ -17,7 +17,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 check_common system/dnf.conf system/microsoft-edge.repo obsidian/obsidian.spec \
   obsidian/obsidian-rpm-update.service obsidian/obsidian-rpm-update.timer \
   claude-desktop/update-retry.conf "$CLAUDE_BUILDER_SOURCE"
-ask_hibernation "${1:-}"
+parse_options "$@"
 sudo -v
 
 log 'Aplicando a configuracao personalizada do DNF'
@@ -58,9 +58,15 @@ sudo dnf install -y \
   langpacks-pt_BR xdg-desktop-portal-kde
 
 log 'Instalando aplicativos RPM'
-sudo dnf install -y \
-  gnome-calculator gnome-text-editor gwenview haruna dolphin papers qbittorrent \
-  helium-bin microsoft-edge-stable
+sudo dnf install -y helium-bin microsoft-edge-stable
+# O Cutefish ja traz os proprios aplicativos (arquivos, editor, calculadora...).
+if [[ "$DESKTOP_ENV" == kde ]]; then
+  sudo dnf install -y \
+    gnome-calculator gnome-text-editor gwenview haruna dolphin papers qbittorrent
+else
+  log 'Cutefish: baixando o Ghostty.app do Mac (roda pelo Reef)'
+  install_ghostty_app
+fi
 
 log 'Gerando o RPM do Obsidian e instalando o atualizador automatico'
 install_obsidian_rpm

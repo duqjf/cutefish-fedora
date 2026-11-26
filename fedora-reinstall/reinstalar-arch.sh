@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Instala os programas e configuracoes desta maquina no pearOS/Arch com KDE Plasma 6.
 # Execute como usuario normal, depois de instalar o sistema.
-# Uso: bash reinstalar-arch.sh [--hibernacao | --sem-hibernacao]
+# Uso: bash reinstalar-arch.sh [--hibernacao | --sem-hibernacao] [--ardia | --sem-ardia]
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source-path=SCRIPTDIR
@@ -20,7 +20,7 @@ esac
 # Nenhum arquivo de configuracao adicional e exigido no Arch.
 # shellcheck disable=SC2119
 check_common
-ask_hibernation "${1:-}"
+parse_options "$@"
 sudo -v
 
 log 'Removendo aplicativos padrao dispensados'
