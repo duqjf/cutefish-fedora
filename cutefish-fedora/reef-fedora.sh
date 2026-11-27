@@ -378,6 +378,8 @@ REPO
 install_rpms() {
   local_repo "$WORK"/rpmbuild/RPMS/x86_64/cutefish-{reef,webkit}*.rpm
   sudo dnf install -y cutefish-reef
+  # O install não troca um pacote já instalado; o upgrade pega o nightly novo.
+  sudo dnf upgrade -y cutefish-reef cutefish-webkit
   sudo install -d -m 2775 -o root -g wheel /Applications
   sudo semanage fcontext -a -t usr_t '/Applications(/.*)?' 2>/dev/null || true
   sudo restorecon -R /Applications /usr/lib/cutefish-reef "$ICU_PREFIX" || true
