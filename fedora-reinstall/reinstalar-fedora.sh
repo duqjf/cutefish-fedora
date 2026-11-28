@@ -15,8 +15,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 [[ "${ID:-}" == fedora ]] || die "Este script foi feito para Fedora, nao para ${ID:-desconhecido}."
 [[ -r "$SCRIPT_DIR/instalar-obsidian.sh" ]] || die 'Leve tambem instalar-obsidian.sh junto com os scripts.'
 check_common system/dnf.conf system/microsoft-edge.repo obsidian/obsidian.spec \
-  obsidian/obsidian-rpm-update.service obsidian/obsidian-rpm-update.timer \
-  claude-desktop/update-retry.conf "$CLAUDE_BUILDER_SOURCE"
+  obsidian/obsidian-rpm-update.service obsidian/obsidian-rpm-update.timer
 parse_options "$@"
 sudo -v
 
@@ -70,9 +69,6 @@ fi
 
 log 'Gerando o RPM do Obsidian e instalando o atualizador automatico'
 install_obsidian_rpm
-
-log 'Compilando o Claude Desktop a partir do build oficial para Linux'
-install_claude_desktop
 
 log 'Compilando o keyd e aplicando a correcao do Caps Lock'
 # Versao testada nesta maquina: keyd v2.6.0 (7c0aecb). https://github.com/rvaiya/keyd

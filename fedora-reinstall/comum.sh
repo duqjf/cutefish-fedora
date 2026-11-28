@@ -273,37 +273,6 @@ install_obsidian_rpm() {
   bash "$SCRIPT_DIR/instalar-obsidian.sh" --instalar-atualizador
 }
 
-# So no Fedora: builder de https://github.com/dewzor/claude-desktop-fedora na
-# revisao f9f3faa5, a mesma revisada e compilada nesta maquina em 30/10/2026.
-# O builder verifica o apt assinado da Anthropic, reempacota o .deb oficial e
-# instala claude-desktop-update.timer, que repete isso uma vez por dia.
-CLAUDE_BUILDER_SOURCE=claude-desktop/claude-desktop-fedora-22404142.tar.gz
-CLAUDE_BUILDER_SHA256=72d0abc21474bddac66e4d1738b93939b15fd56ce6f238aaa1f20b6445df31b4
-install_claude_desktop() (
-  local tmp builder
-  printf '%s  %s\n' "$CLAUDE_BUILDER_SHA256" "$CONFIG_DIR/$CLAUDE_BUILDER_SOURCE" | sha256sum --check --status ||
-    die "SHA-256 inesperado em configs/$CLAUDE_BUILDER_SOURCE"
-  tmp="$(mktemp -d -t claude-desktop.XXXXXXXX)"
-  trap 'rm -rf -- "$tmp"' EXIT
-  sudo dnf install -y rpm-build systemd-rpm-macros
-  tar -xzf "$CONFIG_DIR/$CLAUDE_BUILDER_SOURCE" -C "$tmp"
-  bash "$tmp/copr/make-srpm.sh"
-  rpmbuild --define "_topdir $tmp/rpmbuild" --rebuild "$tmp"/copr/build/SRPMS/claude-desktop-builder-*.src.rpm
-  builder="$(find "$tmp/rpmbuild/RPMS" -type f -name 'claude-desktop-builder-*.noarch.rpm' -print -quit)"
-  [[ -n "$builder" ]] || die 'O RPM claude-desktop-builder nao foi gerado.'
-  sudo dnf install -y "$builder"
-  # O timer dispara logo apos o boot ou o resume, quando o DNS pode falhar.
-  sudo install -D -m 0644 "$CONFIG_DIR/claude-desktop/update-retry.conf" \
-    /etc/systemd/system/claude-desktop-update.service.d/retry.conf
-  sudo systemctl daemon-reload
-  sudo systemctl enable --now claude-desktop-update.timer
-  # Ferramentas de virtualizacao usadas pelo Cowork.
-  sudo dnf install -y qemu-system-x86-core edk2-ovmf virtiofsd
-  # Primeiro ciclo: baixa, verifica, reempacota e instala o aplicativo.
-  sudo env TMPDIR=/var/tmp claude-desktop-update
-  rpm -q claude-desktop
-)
-
 # So no Fedora com Cutefish: o Ghostty do Mac, que roda pelo Reef. Pega o DMG da
 # versao estavel mais nova no appcast oficial e extrai o Ghostty.app com o 7z,
 # sem montar a imagem. /Applications e criada pelo build do Cutefish; se faltar,

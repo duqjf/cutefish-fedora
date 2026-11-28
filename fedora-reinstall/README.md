@@ -20,7 +20,7 @@ No Fedora, o desktop vem de `XDG_CURRENT_DESKTOP` (Cutefish ou, por padrão, KDE
 3. Remove os aplicativos dispensados antes da atualização, para não baixar updates deles.
 4. Atualiza o sistema inteiro.
 5. Instala os codecs e os pacotes do sistema, antes dos aplicativos, para que eles já usem o FFmpeg completo.
-6. No Fedora, gera e instala os RPMs do Obsidian e do Claude Desktop com seus atualizadores; depois instala o keyd, o Fn Lock, as fontes e as configurações do KDE.
+6. No Fedora, gera e instala o RPM do Obsidian com seu atualizador; depois instala o keyd, o Fn Lock, as fontes e as configurações do KDE.
 7. Ativa a hibernação, se escolhida.
 8. Se houver GRUB, troca pelo systemd-boot. Fica por último para que uma falha não impeça o resto; o `resume=` da etapa anterior é levado para o systemd-boot.
 
@@ -33,7 +33,7 @@ No Fedora, o desktop vem de `XDG_CURRENT_DESKTOP` (Cutefish ou, por padrão, KDE
 
 ## O que é instalado
 
-Helium, Microsoft Edge, Ardia Nightly (opcional), Ghostty (no Arch, o pacote; no Fedora com Cutefish, o app do Mac), Obsidian, Claude Desktop (só no Fedora), Claude Code, T3 Code Nightly, Stremio (Flathub, stable, escopo do usuário), qBittorrent, Haruna/mpv, Papers, Dolphin, Editor de Texto e Calculadora do GNOME e Gwenview (esses sete só no KDE), codecs FFmpeg/GStreamer e drivers VA-API Intel.
+Helium, Microsoft Edge, Ardia Nightly (opcional), Ghostty (no Arch, o pacote; no Fedora com Cutefish, o app do Mac), Obsidian, Claude Code, T3 Code Nightly, Stremio (Flathub, stable, escopo do usuário), qBittorrent, Haruna/mpv, Papers, Dolphin, Editor de Texto e Calculadora do GNOME e Gwenview (esses sete só no KDE), codecs FFmpeg/GStreamer e drivers VA-API Intel.
 
 Remove Firefox, Kate, Okular e KWrite; no Fedora, também Nautilus e `xdg-desktop-portal-gnome`. No Arch, um pacote do qual o pearOS dependa é mantido, com aviso.
 
@@ -42,7 +42,6 @@ Remove Firefox, Kate, Okular e KWrite; no Fedora, também Nautilus e `xdg-deskto
 - **T3 Code Nightly:** baixa o AppImage x86_64 da nightly mais recente no GitHub e o mantém intacto em `~/.local/share/t3code-nightly/`, para que o updater da interface funcione. Cria o atalho no menu e registra o link `t3code://`.
 - **Ghostty:** no Arch, pacote `ghostty` do repositório oficial. No Fedora com Cutefish, baixa o `Ghostty.dmg` da versão estável mais nova do appcast oficial, extrai o `Ghostty.app` com o 7z (sem montar a imagem) e o coloca em `/Applications`, onde o Reef o roda. No Fedora com KDE não é instalado. A configuração `configs/ghostty/config` é copiada nas duas distros, porque o Ghostty do Mac também lê `~/.config/ghostty/config`.
 - **Obsidian:** no Fedora, `instalar-obsidian.sh` consulta a última release de `obsidianmd/obsidian-releases`, baixa `obsidian-X.Y.Z.tar.gz`, confere o SHA-256 publicado pelo GitHub e gera o RPM em `/usr/lib64/obsidian`, com lançador e ícone. O timer de sistema `obsidian-rpm-update.timer` roda 10 min após o boot e a cada 12 h, e só reconstrói quando há versão nova; se o Obsidian estiver aberto, adia para a próxima verificação. Opções: `--forcar`, `--apenas-rpm DIR` e `OBSIDIAN_VERSION=1.15.0`. No Arch, usa o pacote `obsidian` do repositório oficial, atualizado pelo pacman.
-- **Claude Desktop:** só no Fedora. Usa o builder de [dewzor/claude-desktop-fedora](https://github.com/dewzor/claude-desktop-fedora) na revisão `f9f3faa5`, a mesma revisada e compilada nesta máquina, guardada em `configs/claude-desktop/` e conferida por SHA-256. O builder confere o repositório apt assinado da Anthropic, reempacota o `.deb` oficial como RPM e instala `claude-desktop-update.timer` (verificação diária). O reinstalador acrescenta um drop-in que repete a verificação em 15 min quando ela falha, porque o timer dispara logo após o boot ou o resume, antes do DNS. Também instala `qemu-system-x86-core`, `edk2-ovmf` e `virtiofsd` para o Cowork. Comandos: `sudo claude-desktop-update --check` e `journalctl -u claude-desktop-update.service`.
 
 O script adiciona `~/.local/bin` ao `PATH` no `~/.bashrc` se ainda não estiver lá.
 
@@ -76,7 +75,6 @@ Ao terminar, reinicie o computador.
 - AUR: [helium-browser-bin](https://aur.archlinux.org/packages/helium-browser-bin) e [microsoft-edge-stable-bin](https://aur.archlinux.org/packages/microsoft-edge-stable-bin)
 - Claude Code: https://code.claude.com/docs/en/setup
 - Obsidian: https://github.com/obsidianmd/obsidian-releases
-- Claude Desktop no Fedora: https://github.com/dewzor/claude-desktop-fedora
 - keyd: https://github.com/rvaiya/keyd
 - Aceleração de vídeo no Arch: https://wiki.archlinux.org/title/Hardware_video_acceleration
 
